@@ -18,7 +18,7 @@ gr()
 #C:\\Users\\tchatelet\\Documents\\Julia\\HeatFluxInfinitePlanesBulk
 hbar = 1.0545718e-34
 k_b = 1.38064852e-23
-Corps_noir = Cst(1.0 + im*1e-5)
+Corps_noir = Cst(1.00 + im*1e-5)
 
 @quickactivate "HeatFluxMultiLayerPlanes"
 
