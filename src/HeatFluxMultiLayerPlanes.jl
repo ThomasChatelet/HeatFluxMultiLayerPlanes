@@ -439,7 +439,7 @@ end
 #multilayertest(20)
 
 function CalcFlux(tablayer,tablayer2,T1,T3,wbot,wtop,message)
-    lengg = 25
+    lengg = 75
     println("Starting " * message)
     datetoday = formatdat()
     abscisse2 = 10 .^range(-9,-5, length = lengg)
@@ -515,16 +515,20 @@ function massgenerateplots(Tc,Tf)
     tablayerSic2 = generatelayertab2(1,4,9e-1)
     tablayerAu = generatelayertab2(1,3,9e-1)
     tablayerAu2 = generatelayertab2(1,3,9e-1)
+    tablayerBB = generatelayertab2(1,1,9e-1)
     while (Tc <= Tf)
-        CalcFlux(tablayerAl,tablayerAl2, Tc ,Tf, 1e8, 1e15, "1 Layer of Al - 1 Layer of Al thick = 1m")
-        CalcFlux(tablayerAl, tablayerSic, Tc ,Tf, 1e8, 1e15, "1 Layer of Al - 1 Layer of SiC thick = 1m")
-        CalcFlux(tablayerSic,tablayerSic2, Tc ,Tf , 1e8, 1e15, "1 Layer of SiC - 1 Layer of SiC thick = 1m")
-        CalcFlux(tablayerAu,tablayerAu2, Tc ,Tf , 1e8, 1e15, "1 Layer of Au - 1 Layer of Au thick = 1m")
-        Tf +=50
+        CalcFlux(tablayerAl,tablayerAl2, Tc ,Tf, 1e8, 1e15, "1 Layer of Al - 1 Layer of Al thick = 0.9m")
+        CalcFlux(tablayerAl, tablayerSic, Tc ,Tf, 1e8, 1e15, "1 Layer of Al - 1 Layer of SiC thick = 0.9m")
+        CalcFlux(tablayerSic,tablayerSic2, Tc ,Tf , 1e8, 1e15, "1 Layer of SiC - 1 Layer of SiC thick = 0.9m")
+        CalcFlux(tablayerAu,tablayerAu2, Tc ,Tf , 1e8, 1e15, "1 Layer of Au - 1 Layer of Au thick = 0.9m")
+        #CalcFlux(tablayerAl,tablayerBB, Tc ,Tf, 1e8, 1e15, "1 Layer of Al - 1 Layer of BB thick = 0.9m")
+        #CalcFlux(tablayerSic,tablayerBB, Tc ,Tf , 1e8, 1e15, "1 Layer of SiC - 1 Layer of BB thick = 0.9m")
+        #CalcFlux(tablayerAu,tablayerBB, Tc ,Tf , 1e8, 1e15, "1 Layer of Au - 1 Layer of BB thick = 0.9m")
+        Tc +=50
     end
 end
 
-massgenerateplots(100,700)
+massgenerateplots(200,700)
 
 #https://sci-hub.se/10.1364/OE.20.001903
 
