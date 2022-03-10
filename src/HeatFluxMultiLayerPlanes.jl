@@ -1,4 +1,4 @@
-module HeatFluxInfinitePlanesBulk
+module HeatFluxMultiLayerPlanes
 
 using Plots
 using NumericalIntegration
@@ -40,9 +40,9 @@ function Kz(omega, permit, kpar)
     return sqrt( (omega*omega*permit)/(c0*c0) - kpar*kpar +0.0im)
 end
 
-"""""
+"""
 Définition des coefficients de réflexion et de transmission selon transverse electrique et magnétique
-"""""
+"""
 function reflectcoefTE(omega,kpar,Eps1,Eps2) #Patch4mat
     return (( Kz(omega,Eps1,kpar) - Kz(omega,Eps2,kpar)))/( Kz(omega,Eps1,kpar) + Kz(omega,Eps2,kpar))
 end
@@ -59,6 +59,8 @@ function reflectcoefTM(omega,kpar,Eps1,Eps2)
     return ( Kz(omega,Eps1,kpar)*Eps2 - Kz(omega,Eps2,kpar)*Eps1      )/( Kz(omega,Eps1,kpar)*Eps2 + Kz(omega,Eps2,kpar)*Eps1 )
 end
 
+
+#=
 function gencomplextab(leng)
     l = [0.0 + 0im]
     for i in 1:leng-1
@@ -66,7 +68,7 @@ function gencomplextab(leng)
     end
     return l
 end
-#=
+
 function checkcoefTE(Mat1,Mat2,omega)
     leng = 1250
     kparallele = 10 .^range(3,9, length = leng)
@@ -141,75 +143,93 @@ end
 
 #masscheckcoefTE(tabMat1,tabMat2,omega)
 =#
-"""""
+"""
 Intégrande des differentes parties de k parallèle
-"""""
-function integpropagTEMultilayer(omega,kpar,d,Eps2,tabLayer,tablaysize,tabepaisseur)
+"""
+
+#=
+function integpropagTEMultilayer(omega,kpar,d,Eps2,tablayer,tablayer2,tablayer2,tablaysize,tabepaisseur)
     #Eps3 = permittivity(tabLayer[tablaysize-1],omega)
-    Eps3 = permittivity(tabLayer[1],omega)
-    r_TE3 = reflectcoefTE(omega,kpar,Eps3,Eps2)
-    (r_TE1,b,r_TM1,d,e,f,sE,sM) = calculreflexionmulticouches(omega,kpar,tabLayer,tablaysize,tabepaisseur)
+    (r_TE1,b,r_TM1,d,e,f,sE,sM) = calculreflexionmulticouches(omega,kpar,tablayer,tablaysize,tabepaisseur)
+    tempsize, = size(tablayer2)
+    (r_TE3,b,r_TM3,d,e,f,sE,sM) = calculreflexionmulticouches(omega,kpar,tablayer2,tempsize,tabepaisseur)
     return kpar*((((1 - abs2(r_TE1)) * (1 - abs2(r_TE3))))/(abs2(1 - (r_TE1 * r_TE3 *exp(2im*d*Kz(omega, Eps2, kpar))))))
 end
 
-function integpropagTMMultilayer(omega,kpar,d,Eps2,tabLayer,tablaysize,tabepaisseur)
-    Eps3 = permittivity(tabLayer[1],omega)
-    r_TM3 = reflectcoefTM(omega,kpar,Eps3,Eps2)
-    (r_TE1,b,r_TM1,d,e,f,sE,sM) = calculreflexionmulticouches(omega,kpar,tabLayer,tablaysize,tabepaisseur)
+function integpropagTMMultilayer(omega,kpar,d,Eps2,tablayer,tablayer2,tablaysize,tabepaisseur)
+    tempsize, = size(tablayer2)
+    (r_TE3,b,r_TM3,d,e,f,sE,sM) = calculreflexionmulticouches(omega,kpar,tablayer2,tempsize,tabepaisseur)
+    (r_TE1,b,r_TM1,d,e,f,sE,sM) = calculreflexionmulticouches(omega,kpar,tablayer,tablaysize,tabepaisseur)
     return kpar*(((1 - abs2(r_TM1)) * (1 - abs2(r_TM3)))/(abs2(1 - (r_TM1 * r_TM3 * exp(2im*d*Kz(omega, Eps2, kpar))))))
 end
 
-function integevaTEMultilayer(omega,kpar,d,Eps2,tabLayer,tablaysize,tabepaisseur)
-    Eps3 = permittivity(tabLayer[1],omega)
-    r_TE3 = reflectcoefTE(omega,kpar,Eps3,Eps2)
-    (r_TE1,b,r_TM1,d,e,f,sE,sM) = calculreflexionmulticouches(omega,kpar,tabLayer,tablaysize,tabepaisseur)
+function propagshape(r1,r3,d,kpar,w)
+    return kpar*((((1 - abs2(r1)) * (1 - abs2(r3))))/(abs2(1 - (r1 * r3 * exp(2im*d*Kz(omega, Eps2, kpar))))))
+end
+=#
+function integpropagTEMultilayer(omega,kpar,d,Eps2,tablayer,tablayer2)
+    #Eps3 = permittivity(tabLayer[tablaysize-1],omega)
+    (r_TE1,r_TM1,sE,sM) = calculreflexionmulticouches(omega,kpar,tablayer)
+    (r_TE3,r_TM3,sE,sM) = calculreflexionmulticouches(omega,kpar,tablayer2)
+    return kpar*((((1 - abs2(r_TE1)) * (1 - abs2(r_TE3))))/(abs2(1 - (r_TE1 * r_TE3 *exp(2im*d*Kz(omega, Eps2, kpar))))))
+end
+
+function integpropagTMMultilayer(omega,kpar,d,Eps2,tablayer,tablayer2)
+    (r_TE1,r_TM1,sE,sM) = calculreflexionmulticouches(omega,kpar,tablayer)
+    (r_TE3,r_TM3,sE,sM) = calculreflexionmulticouches(omega,kpar,tablayer2)
+    return kpar*(((1 - abs2(r_TM1)) * (1 - abs2(r_TM3)))/(abs2(1 - (r_TM1 * r_TM3 * exp(2im*d*Kz(omega, Eps2, kpar))))))
+end
+
+
+
+function integevaTEMultilayer(omega,kpar,d,Eps2,tablayer,tablayer2)
+    (r_TE1,r_TM1,sE,sM) = calculreflexionmulticouches(omega,kpar,tablayer)
+    (r_TE3,r_TM3,sE,sM) = calculreflexionmulticouches(omega,kpar,tablayer2)
     k2perp = Kz(omega, Eps2, kpar)
     return 4*kpar*exp(-2*d*imag(k2perp))*((imag(r_TE1)) * (imag(r_TE3)))/(abs2(1-(r_TE1 * r_TE3 * exp(-2*d*imag(k2perp)))))
 end
 
-function integevaTMMultilayer(omega,kpar,d,Eps2,tabLayer,tablaysize,tabepaisseur)
-    Eps3 = permittivity(tabLayer[1],omega)
-    r_TM3 = reflectcoefTM(omega,kpar,Eps3,Eps2)
-    (r_TE1,b,r_TM1,d,e,f,sE,sM) = calculreflexionmulticouches(omega,kpar,tabLayer,tablaysize,tabepaisseur)
+function integevaTMMultilayer(omega,kpar,d,Eps2,tablayer,tablayer2)
+    (r_TE1,r_TM1,sE,sM) = calculreflexionmulticouches(omega,kpar,tablayer)
+    (r_TE3,r_TM3,sE,sM) = calculreflexionmulticouches(omega,kpar,tablayer2)
     k2perp = Kz(omega, Eps2, kpar)
     return (4*kpar*exp(-2*d*imag(k2perp)))*(((imag(r_TM1)) * (imag(r_TM3)))/(abs2(1-(r_TM1 * r_TM3 * exp(-2*d*imag(k2perp))))))
 end
 
 
-sigma
-"""""
+"""
 Intégration sur Kparallele
-"""""
-function FpropagTE(omega,d,T1,T3,tablayer,tablaysize,tabepaisseur)
+"""
+function FpropagTE(omega,d,T1,T3,tablayer,tablayer2)
     bornedecoup = omega/c0
-    Eps2 = 1
-    prefact = (1/(4*pi*pi))*(BEdistribdotEnergy(omega,T1) - BEdistribdotEnergy(omega,T3))
-    valTE, err3 = quadgk( kpar -> integpropagTEMultilayer(omega,kpar,d,Eps2,tablayer,tablaysize,tabepaisseur), 0, bornedecoup, rtol=1e-6)
-    return prefact*real(valTE)
+    Eps2 = 1.0
+    prefact = (1.0/(4*pi*pi))*(BEdistribdotEnergy(omega,T1) - BEdistribdotEnergy(omega,T3))
+    valTE, err3 = quadgk( kpar -> integpropagTEMultilayer(omega,kpar,d,Eps2,tablayer,tablayer2), 0, bornedecoup, rtol=1e-6)
+    return prefact*real(valTE) #catch
 end
 
-function FpropagTM(omega,d,T1,T3,tablayer,tablaysize,tabepaisseur)
+function FpropagTM(omega,d,T1,T3,tablayer,tablayer2)
     bornedecoup = omega/c0
-    Eps2 = 1
-    prefact = (1/(4*pi*pi))*(BEdistribdotEnergy(omega,T1) - BEdistribdotEnergy(omega,T3))
+    Eps2 = 1.0 + 0.0im
+    prefact = (1.0/(4*pi*pi))*(BEdistribdotEnergy(omega,T1) - BEdistribdotEnergy(omega,T3))
     bornesup = Inf
-    valTM, err5 = quadgk( kpar -> integpropagTMMultilayer(omega,kpar,d,Eps2,tablayer,tablaysize,tabepaisseur), 0, bornedecoup, rtol=1e-6)
+    valTM, err5 = quadgk( kpar -> integpropagTMMultilayer(omega,kpar,d,Eps2,tablayer,tablayer2), 0, bornedecoup, rtol=1e-6)
     return prefact*(real(valTM))
 end
 
-function FevaTE(omega,d,T1,T3,tablayer,tablaysize,tabepaisseur)
+function FevaTE(omega,d,T1,T3,tablayer,tablayer2)
     bornedecoup = omega/c0
-    Eps2 = 1
-    prefact = (1/(4*pi*pi))*(BEdistribdotEnergy(omega,T1) - BEdistribdotEnergy(omega,T3))
-    valTE2, err4 = quadgk( kpar -> integevaTEMultilayer(omega,kpar,d,Eps2,tablayer,tablaysize,tabepaisseur), bornedecoup, Inf, rtol=1e-6)
+    Eps2 = 1.0
+    prefact = (1.0/(4*pi*pi))*(BEdistribdotEnergy(omega,T1) - BEdistribdotEnergy(omega,T3))
+    valTE2, err4 = quadgk( kpar -> integevaTEMultilayer(omega,kpar,d,Eps2,tablayer,tablayer2), bornedecoup, Inf, rtol=1e-6)
     return prefact*( real(valTE2) )
 end
 
-function FevaTM(omega,d,T1,T3,tablayer,tablaysize,tabepaisseur)
+function FevaTM(omega,d,T1,T3,tablayer,tablayer2)
     bornedecoup = omega/c0
-    Eps2 = 1
-    prefact = (1/(4*pi*pi))*(BEdistribdotEnergy(omega,T1) - BEdistribdotEnergy(omega,T3))
-    valTM2, err6 = quadgk( kpar -> integevaTMMultilayer(omega,kpar,d,Eps2,tablayer,tablaysize,tabepaisseur), bornedecoup, Inf, rtol=1e-6)
+    Eps2 = 1.0+ 0.0im
+    prefact = (1.0/(4*pi*pi))*(BEdistribdotEnergy(omega,T1) - BEdistribdotEnergy(omega,T3))
+    valTM2, err6 = quadgk( kpar -> integevaTMMultilayer(omega,kpar,d,Eps2,tablayer,tablayer2), bornedecoup, Inf, rtol=1e-6)
     return prefact*( real(valTM2) )
 end
 
@@ -249,20 +269,21 @@ function evolves0TM(S_TM,Mat1,Mat2,omega,kparallele,epaisseur)
     S22 = S_TM[4]
     Eps1 = permittivity(Mat1,omega)
     Eps2 = permittivity(Mat2,omega)
-    exp1kz = exp(1im*epaisseur*Kz(omega,Eps1,kparallele)) +0im
-    exp2kz = exp(2im*epaisseur*Kz(omega,Eps1,kparallele)) +0im
+    exp1kz = exp(1im*epaisseur*Kz(omega,Eps1,kparallele))
+    exp2kz = exp(2im*epaisseur*Kz(omega,Eps1,kparallele))
     r_TM = reflectcoefTM(omega,kparallele,Eps1,Eps2)
     t_TM = transmiscoefTM(omega,kparallele,Eps1,Eps2)
-    S_TM[1] = (S11 * t_TM * exp1kz)   /(1.0+0im-S12*r_TM*exp2kz)
-    S_TM[2] = (S12*exp2kz - r_TM)     /(1.0+0im-S12*r_TM*exp2kz)
-    S_TM[3] = S21 + (1.0+0im/t_TM)*(S_TM[1]*S22*r_TM*exp1kz)
-    S_TM[4] = (1.0+0im/t_TM)*(S22*(r_TM*S_TM[2]+1.0+0im)*exp1kz)
+    S_TM[1] = (S11 * t_TM * exp1kz)   /(1.0-S12*r_TM*exp2kz)
+    S_TM[2] = (S12*exp2kz - r_TM)     /(1.0-S12*r_TM*exp2kz)
+    S_TM[3] = S21 + (1.0/t_TM)*(S_TM[1]*S22*r_TM*exp1kz)
+    S_TM[4] = (1.0/t_TM)*(S22*(r_TM*S_TM[2]+1.0+0im)*exp1kz)
 end
 
 
 s0 = generates0()
+tabLayer = generatelayertab(1)
 
-
+#=
 omega = 1e14
 kpar = omega/(2.0*c0)
 s0 = generates0()
@@ -275,6 +296,7 @@ abs(rr) - abs(s0[3])
 
 abs(tt) + abs(rr)
 real(tt) + real(rr)
+=#
 
 function generatethicknesstab(leng) #Generate random thicknesses for Layers  10-8 => 10-4
     tabthick = zeros(leng)
@@ -297,29 +319,31 @@ function generatelayertab(leng)
     pop!(tablay) #Type issue
     tabMat1 = [(Corps_noir),(Al()),(Au()),(Sic()),((Ti)),(TiW_v2),(Si_n_doped(nSi_masetti,1e17)),(Si_p_doped(pSi_masetti,1e17)),(Vacuum)]
     for i in 1:leng
-        draw = rand(2:2)
+        draw = rand(1:1)
         objet = tabMat1[draw]
         push!(tablay,Layer(objet,1*10^(-1*(rand(5:7) + rand(Float64)))))
     end
     return tablay
 end
 
-function generatelayertab2(leng)
+function generatelayertab2(leng,key,dimthick)
     tablay = [Layer(Vacuum)]
-    pop!(tablay) #Type issue
+    #pop!(tablay)
     tabMat1 = [(Corps_noir),(Al()),(Au()),(Sic()),((Ti)),(TiW_v2),(Si_n_doped(nSi_masetti,1e17)),(Si_p_doped(pSi_masetti,1e17)),(Vacuum)]
     for i in 1:leng
-        draw = rand(2:2)
+        draw = rand(key:key)
         objet = tabMat1[draw]
-        push!(tablay,Layer(objet,1*10^(-7)))
+        #push!(tablay,Layer(objet,1*10^(-1.0*dimthick)))
+        push!(tablay,Layer(objet,dimthick))
     end
+    #push!(tablay,Layer(Vacuum))
     return tablay
 end
 
-function calculreflexionmulticouches(omega,kparallele,tabLayer,tablaysize,tabepaisseur)
+function calculreflexionmulticouches(omega,kparallele,tabllayer)
     S_TransverseTE = generates0()
     S_TransverseTM = generates0()
-    nbcouches, = size(tabLayer)
+    nbcouches, = size(tabllayer)
     rTE_end = 0
     rTM_end = 0
     #=
@@ -328,21 +352,25 @@ function calculreflexionmulticouches(omega,kparallele,tabLayer,tablaysize,tabepa
         return
     end
     =#
-    inner = nbcouches - 1
-    for i in 1:inner
-        evolves0TE(S_TransverseTE,tabLayer[i],tabLayer[i+1],omega,kparallele,tabepaisseur[i])
-        evolves0TM(S_TransverseTM,tabLayer[i],tabLayer[i+1],omega,kparallele,tabepaisseur[i])
+    #inner = nbcouches - 1
+    for i in 2:nbcouches
+        evolves0TE(S_TransverseTE,tabllayer[i-1],tabllayer[i],omega,kparallele,tabllayer[i-1].thickness)
+        evolves0TM(S_TransverseTM,tabllayer[i-1],tabllayer[i],omega,kparallele,tabllayer[i-1].thickness)
     end
     rTE_end = S_TransverseTE[3]
     rTM_end = S_TransverseTM[3]
     tTE_end = S_TransverseTE[1]
     tTM_end = S_TransverseTM[1]
-    return (rTE_end, abs2(tTE_end) + abs2(rTE_end), rTM_end, abs2(tTM_end) + abs2(rTM_end),tabLayer,tabepaisseur,S_TransverseTE,S_TransverseTM)
+    return (rTE_end, rTM_end, S_TransverseTE,S_TransverseTM)
 end
 
+end
+#=
+rt(laytab,te(),kpar,omega)
 omega = 1e14
 kpar = omega/(2.0*c0)
 (a,b,c,d,e,f,sE,sM) = calculreflexionmulticouches(omega,kpar,tabLayer)
+(a,b,sE,sM) = calculreflexionmulticouches(omega,kpar,tabLayer)
 Current_mat =  Layer(Si_n_doped(nSi_masetti,1e17))
 tt = transmiscoefTE(omega,kpar,permittivity(Current_mat,omega),1.0 + 0im)
 rr = reflectcoefTE(omega,kpar,permittivity(Current_mat,omega),1.0 + 0im)
@@ -350,10 +378,10 @@ rrM = reflectcoefTM(omega,kpar,permittivity(Current_mat,omega),1.0 + 0im)
 ttM = transmiscoefTM(omega,kpar,permittivity(Current_mat,omega),1.0 + 0im)
 
 abs(rr) - abs(sE[3])
-
-"""""
+=#
+"""
 Formattage des output
-"""""
+"""
 
 function formatdat()
     Momentexec = string(Dates.now())
@@ -383,35 +411,36 @@ function identifymat(Mat)
     return "Inc"
 end
 
-"""""
+"""
 Intégration sur omega
-"""""
+"""
 
-function FluxnetechangeMultilayer(d,T1,T3,tablayer,nbcouches,tabepaisseur; w1 = 1e10, w2 = 1e16)
+function FluxnetechangeMultilayer(d,T1,T3,tablayer,tablayer2; w1 = 1e10, w2 = 1e16) #UndefVarError: FluxnetechangeMultilayer not defined
     #return quadgk(integrandtot,0,Inf,rtol=1e-6)
-    valTE,err20 = quadgk( omega -> FpropagTE(omega,d,T1,T3,tablayer,nbcouches,tabepaisseur), w1, w2; rtol=1e-6)
-    valTE2,err21 = quadgk( omega -> FevaTE(omega,d,T1,T3,tablayer,nbcouches,tabepaisseur), w1, w2; rtol=1e-6)
-    valTM,err22 = quadgk( omega -> FpropagTM(omega,d,T1,T3,tablayer,nbcouches,tabepaisseur), w1, w2; rtol=1e-6)
-    valTM2,err23 = quadgk( omega -> FevaTM(omega,d,T1,T3,tablayer,nbcouches,tabepaisseur), w1, w2; rtol=1e-6)
+    valTE,err20 = quadgk( omega -> FpropagTE(omega,d,T1,T3,tablayer,tablayer2), w1, w2; rtol=1e-6)
+    valTE2,err21 = quadgk( omega -> FevaTE(omega,d,T1,T3,tablayer,tablayer2), w1, w2; rtol=1e-6)
+    valTM,err22 = quadgk( omega -> FpropagTM(omega,d,T1,T3,tablayer,tablayer2), w1, w2; rtol=1e-6)
+    valTM2,err23 = quadgk( omega -> FevaTM(omega,d,T1,T3,tablayer,tablayer2), w1, w2; rtol=1e-6)
     return (valTE, valTE2, valTM, valTM2, valTE + valTE2, valTM + valTM2, valTE + valTE2 + valTM + valTM2 )
 end
 
 
 
-FluxnetechangeMultilayer(1e-3,1,0,tablayer)
+#FluxnetechangeMultilayer(1e-3,1,0,tablayer)
 
 function multilayertest(nbcouches)
     tablayer = generatelayertab(nbcouches)
-    push!(tablayer, Layer(Vacuum))
+    pushfirst!(tablayer,tablayer2, Layer(Vacuum))
     tabepaisseur = generatethicknesstab(nbcouches)
-    push!(tabepaisseur, 0.99999999)
-    FluxnetechangeMultilayer(1e-3,1,0,tablayer,nbcouches+1,tabepaisseur)
+    pushfirst!(tabepaisseur, 0.99999999)
+    FluxnetechangeMultilayer(1e-3,1,0,tablayer,tablayer2,nbcouches+1,tabepaisseur)
 end
 
-multilayertest(20)
+#multilayertest(20)
 
-function CalcFlux(T1,T3,wbot,wtop)
-    lengg = 12
+function CalcFlux(tablayer,tablayer2,T1,T3,wbot,wtop,message)
+    lengg = 25
+    println("Starting " * message)
     datetoday = formatdat()
     abscisse2 = 10 .^range(-9,-5, length = lengg)
     Homemade = zeros(lengg)
@@ -424,8 +453,8 @@ function CalcFlux(T1,T3,wbot,wtop)
     PropagTMtab = zeros(lengg)
     EvaTEtab = zeros(lengg)
     EvaTMtab = zeros(lengg)
-    Mat1str = "SiC layers "#identifymat(Mat1)
-    Mat3str = "SiC"#identifymat(Mat3)
+    Mat1str = message #identifymat(Mat1)
+    Mat3str = " " #identifymat(Mat3)
     cd(datadir())
     cd("exp_raw")
     #rm("Hflux" * Mat1str * " " * Mat3str)
@@ -436,17 +465,10 @@ function CalcFlux(T1,T3,wbot,wtop)
     ioH = open("Calcul HFlux Homemade " * Mat1str * " " * Mat3str * ".txt", "w+");
     ioM = open("Calcul HFlux Merch " * Mat1str * " " * Mat3str * " .txt", "w+");
     ioDiff = open("Calcul Flux Diff Homemade-Merch " * Mat1str * " " * Mat3str* " .txt", "w+");
-    S_TransverseTE = generates0()
-    S_TransverseTM = generates0()
-    nbcouches = 9
-    tablayer = generatelayertab(nbcouches)
-    push!(tablayer, Layer(Vacuum))
-    tabepaisseur = generatethicknesstab(nbcouches)
-    push!(tabepaisseur, 0.99999999)
     for i in 1:lengg #Abscisse2 itération sur d
-                #Merchfunc[i] = total_heat_transfer(Mat1, Mat3, Layer(Vacuum, abscisse2[i]), T1 , T3, 1e10, 1e16 ;tolkx=1e-6,tolw=1e-6)[5]
+                #Merchfunc[i] = total_heat_transfer(tablayer, tablayer2, Layer(Vacuum, abscisse2[i]), T1 , T3, 1e10, 1e16 ;tolkx=1e-6,tolw=1e-6)[5]
                 if (i%3 == 0) println(repr(i) * " Precalcul Homemade" * Mat1str * " " * Mat3str) end
-                (PropagTEtab[i], EvaTEtab[i], PropagTMtab[i],EvaTMtab[i], valTE[i], valTM[i], Homemade[i] )= FluxnetechangeMultilayer(abscisse2[i],T1,T3,tablayer,nbcouches+1,tabepaisseur)
+                (PropagTEtab[i], EvaTEtab[i], PropagTMtab[i],EvaTMtab[i], valTE[i], valTM[i], Homemade[i] )= FluxnetechangeMultilayer(abscisse2[i],T1,T3,tablayer,tablayer2)
                 #return (valTE, valTE2, valTM, valTM2, valTE + valTE2, valTM + valTM2, valTE + valTE2 + valTM + valTM2 )
                 if (i%3 == 0) println(i) end
                 println(ioA, abscisse2[i])
@@ -456,36 +478,55 @@ function CalcFlux(T1,T3,wbot,wtop)
     close(ioA)
     close(ioH)
     close(ioM)
-    #plot(abscisse2,Homemade,xlabel = "Plane separation distance",  label = "Homemade logscale", xaxis=:log, yaxis=:log)
+    for i in 1:lengg
+        (PropagTEtab[i], EvaTEtab[i], PropagTMtab[i],EvaTMtab[i], valTE[i], valTM[i], Homemade[i] ) = (abs(PropagTEtab[i]), abs(EvaTEtab[i]),abs( PropagTMtab[i]),abs(EvaTMtab[i]), abs(valTE[i]), abs(valTM[i]), abs(Homemade[i]) )
+    end
+    plot(abscisse2,Homemade,xlabel = "Plane separation distance",  label = "Homemade logscale", xaxis=:log, yaxis=:log)
     #plot!(abscisse2,Merchfunc,xlabel = "Plane separation distance", label = "Merchfunc logscale", xaxis=:log, yaxis=:log)
-    #savefig("HeatFluxSemilogged" * Mat1str * " " * Mat3str *" .png")
-    plot(abscisse2,Homemade,xlabel = "Plane separation distance",  label = "Homemade logscale", xaxis=:log, yaxis=:log,ylim=(1e1, 1e9))
-    plot!(abscisse2,PropagTEtab,xlabel = "Plane separation distance", label = "PropagTEtab contribution", xaxis=:log, yaxis=:log,ylim=(1e1, 1e9))
-    plot!(abscisse2,EvaTEtab,xlabel = "Plane separation distance", label = "EvaTEtab contribution", xaxis=:log, yaxis=:log,ylim=(1e1, 1e9))
-    plot!(abscisse2,PropagTMtab,xlabel = "Plane separation distance", label = "PropagTMtab contribution", xaxis=:log, yaxis=:log,ylim=(1e1, 1e9))
-    plot!(abscisse2,EvaTMtab,xlabel = "Plane separation distance", label = "EvaTMtab contribution", xaxis=:log, yaxis=:log,ylim=(1e1, 1e9))
-    savefig("HeatFluxContributionslogged" * Mat1str * " " * Mat3str *" .png")
-    savefig("C:\\Users\\tchatelet\\Documents\\Julia\\Results-plot", "HeatFluxContributionslogged" * Mat1str * " " * Mat3str *" .png")
+    savefig("HeatFluxSemilogged" * Mat1str * " " * Mat3str * " " * string(T1) * "K " * string(T3) * "K " * " .png")
+    plot(abscisse2,Homemade,xlabel = "Plane separation distance",  label = "Homemade logscale", xaxis=:log, yaxis=:log,ylim=(1e-1, 1e8))
+    plot!(abscisse2,PropagTEtab,xlabel = "Plane separation distance", label = "PropagTEtab contribution", xaxis=:log, yaxis=:log,ylim=(1e-1, 1e8))
+    plot!(abscisse2,EvaTEtab,xlabel = "Plane separation distance", label = "EvaTEtab contribution", xaxis=:log, yaxis=:log,ylim=(1e-1, 1e8))
+    plot!(abscisse2,PropagTMtab,xlabel = "Plane separation distance", label = "PropagTMtab contribution", xaxis=:log, yaxis=:log,ylim=(1e-1, 1e8))
+    plot!(abscisse2,EvaTMtab,xlabel = "Plane separation distance", label = "EvaTMtab contribution", xaxis=:log, yaxis=:log,ylim=(1e-1, 1e8))
+    savefig("HeatFluxContributionslogged" * Mat1str * " " * Mat3str * " " * string(T1) * "K " * string(T3) * "K " * " .png")
+    #savefig("C:\\Users\\tchatelet\\Documents\\Julia\\Results-plot", "HeatFluxContributionslogged" * Mat1str * " " * Mat3str * " " * string(T1) * "K " * string(T3) * "K " * " .png")
     lengg = 10
+    #=
     Errorcompare = zeros(lengg)
     Errorrelative = zeros(lengg)
     abscisse3 = zeros(lengg)
-    #difftab(lengg,Homemade,Merchfunc,Errorcompare,abscisse3,Errorrelative,abscisse2)
-    #plot(abscisse3,Errorrelative, xlabel = "Plane separation distance",label ="Relative error Hmade _ TotalHeatTransferFlux",Title = "Heat transfer @ 300K 600K")
-    #savefig("Relative_error " * Mat1str * " " * Mat3str * ".png")
+    difftab(lengg,Homemade,Merchfunc,Errorcompare,abscisse3,Errorrelative,abscisse2)
+    plot(abscisse3,Errorrelative, xlabel = "Plane separation distance",label ="Relative error Hmade _ TotalHeatTransferFlux",Title = "Heat transfer @ 300K 600K")
+    savefig("Relative_error " * Mat1str * " " * Mat3str * ".png")
     close(ioDiff)
+    =#
     println("endof " * Mat1str * " " * Mat3str)
 end
 
-Temperature1 = 100
-Temperature2 = 700
-while (Temperature1 <= Temperature2)
-    #CalcFlux(Layer(Corps_noir),Layer(Corps_noir), Temperature2, Temperature1, 1e10, 1e16)
-    CalcFlux(Temperature2, Temperature1, 1e10, 1e16)
-    #CalcFlux(Layer(Al()),Layer(Sic()), Temperature2, Temperature1, 1e10, 1e16)
-    #CalcFlux(Layer(Al()),Layer(Al()), Temperature2, Temperature1, 1e10, 1e16)
-    Temperature1 +=50
+
+
+function massgenerateplots(Tc,Tf)
+    #Tc = 100
+    #Tf = 700
+    tablayerAl = generatelayertab2(1,2,9e-1)
+    tablayerAl2 = generatelayertab2(1,2,9e-1)
+    tablayerSic = generatelayertab2(1,4,9e-1)
+    tablayerSic2 = generatelayertab2(1,4,9e-1)
+    tablayerAu = generatelayertab2(1,3,9e-1)
+    tablayerAu2 = generatelayertab2(1,3,9e-1)
+    while (Tc <= Tf)
+        CalcFlux(tablayerAl,tablayerAl2, Tc ,Tf, 1e8, 1e15, "1 Layer of Al - 1 Layer of Al thick = 1m")
+        CalcFlux(tablayerAl, tablayerSic, Tc ,Tf, 1e8, 1e15, "1 Layer of Al - 1 Layer of SiC thick = 1m")
+        CalcFlux(tablayerSic,tablayerSic2, Tc ,Tf , 1e8, 1e15, "1 Layer of SiC - 1 Layer of SiC thick = 1m")
+        CalcFlux(tablayerAu,tablayerAu2, Tc ,Tf , 1e8, 1e15, "1 Layer of Au - 1 Layer of Au thick = 1m")
+        Tf +=50
+    end
 end
+
+massgenerateplots(100,700)
+
+#https://sci-hub.se/10.1364/OE.20.001903
 
 CalcFlux(Layer(Al()),Layer(Al()),500,300, 1e10, 1e16)
 CalcFlux(Layer(Al()),Layer(Al()),1,0, 1e10, 1e16)
@@ -507,22 +548,38 @@ ioDiff = open("Calcul Flux Diff Homemade-Merch .txt", "w+");
 total_heat_transfer(Layer(Al()), Layer(Al()), Layer(Vacuum, 1e-6), 500 , 300, 5e10, 1e16 ; tolkx=1e-6,tolw=1e-6)[5]
 Fluxnetechange(1e-6,500,300,Layer(Al()),Layer(Al()))
 
-total_heat_transfer(Layer(Corps_noir),Layer(Corps_noir) , Layer(Vacuum, 1e-6), 1 , 0, 5e10, 1e16 ; tolkx=1e-6,tolw=1e-6)[5]
+total_heat_transfer(Layer(Corps_noir),Layer(Corps_noir) , Layer(Vacuum, 1e-9), 1 , 0, 1e8, 1e15 ; tolkx=1e-6,tolw=1e-6)[5]
 FluxnetechangeMultilayer(1e-6,1,0,Corps_noir,Corps_noir)
 
-FluxnetechangeMultilayer(d,1,0,tablayer)
+FluxnetechangeMultilayer(1e-7,1,0,tablayer)
 
 tablayer
 
 plot(abscisse2,Homemade,xlabel = "Plane separation distance",  label = "Homemade logscale", xaxis=:log)
 plot!(abscisse2,Merchfunc,xlabel = "Plane separation distance", label = "Merchfunc logscale", xaxis=:log)
 savefig("C:\\Users\\tchatelet\\Documents\\Julia\\HeatFluxSemilogged.png")
+
 end
+tablayer = generatelayertab2(1,1)
+tablayer2 =  generatelayertab2(1,1)
+FluxnetechangeMultilayer(1e-9,1,0,tablayer,tablayer2)
 
 
-
-
-
+Tc = 100
+Tf = 700
+tablayerAl = generatelayertab2(5,2)
+tablayerAl2 = generatelayertab2(5,2)
+tablayerSic = generatelayertab2(5,4)
+tablayerSic2 = generatelayertab2(5,4)
+tablayerAu = generatelayertab2(5,3)
+tablayerAu2 = generatelayertab2(5,3)
+while (Tc <= Tf)
+    #CalcFlux(tablayerAl, tablayerSic, Tc ,Tf, 1e8, 1e15, "Layer of Al-Sic")
+    CalcFlux(tablayerSic,tablayerSic2, Tc ,Tf , 1e8, 1e15, "Layer of Sic-Sic")
+    CalcFlux(tablayerAu,tablayerAu2, Tc ,Tf , 1e8, 1e15, "Layer of Au-Au")
+    #CalcFlux(tablayerAl,tablayerAl2, Tc ,Tf, 1e8, 1e15, "Layer of Al-Al")
+    Tc +=50
+end
 #=
 function evolve_amplitude_TE(Al,Bl,S_TE)
     BlMultilayer1= 1.0/(S_TE[4]) * (Bl - S_TE[3])
