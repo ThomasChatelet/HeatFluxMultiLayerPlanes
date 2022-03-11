@@ -379,6 +379,32 @@ ttM = transmiscoefTM(omega,kpar,permittivity(Current_mat,omega),1.0 + 0im)
 
 abs(rr) - abs(sE[3])
 =#
+function Layerdepositer()
+    print("Define material \n")
+# Calling rdeadline() function
+    Strmat = readline()
+    Mat = reverseidentifyStr(Strmat)
+    print("Define thickness \n")
+    thickness = readline()
+    thickness = parse(Float64, thickness)
+    println("\n")
+    return Layer(Mat,thickness)
+# typeof() determines the datatype.
+end
+
+function manualtabcreator()
+    println("Define number of layer of side 1 \n")
+    nblayer1 = readline()
+    nblayer1 = parse(Float64, thickness)
+    println("You'll be asked to enter one by one the material and the thickness of each layer \n")
+    tablayer1 = []
+    for i in 1:nblayer1
+        reslayer = Layerdepositer()
+        push!()
+    end
+
+end
+
 """
 Formattage des output
 """
@@ -411,6 +437,19 @@ function identifymat(Mat)
     return "Inc"
 end
 
+function reverseidentifyStr(Str)
+    if (Str == "Al") return Al() end
+    if (Str == "Sic") return Sic() end
+    if (Str == "Corps noir") return Corps_noir end
+    if (Str == "Vacuum") return Vacuum() end
+    if (Str == "Au") return Au() end
+    if (Str == "Ti") return Ti end
+    if (Str ==  "TiW_v2") return  TiW_v2 end
+    if (Str == "Si_n") return Si_n_doped(nSi_masetti,1e17) end
+    if (Str == "Si_p") return Si_p_doped(nSi_masetti,1e17) end
+    return "Inc"
+end
+
 """
 Intégration sur omega
 """
@@ -430,7 +469,7 @@ end
 
 function multilayertest(nbcouches)
     tablayer = generatelayertab(nbcouches)
-    pushfirst!(tablayer,tablayer2, Layer(Vacuum))
+    pushfirst!(tablayer,tablayer2, Layer(Vacuum)) #WTH
     tabepaisseur = generatethicknesstab(nbcouches)
     pushfirst!(tabepaisseur, 0.99999999)
     FluxnetechangeMultilayer(1e-3,1,0,tablayer,tablayer2,nbcouches+1,tabepaisseur)
@@ -503,7 +542,6 @@ function CalcFlux(tablayer,tablayer2,T1,T3,wbot,wtop,message)
     =#
     println("endof " * Mat1str * " " * Mat3str)
 end
-
 
 
 function massgenerateplots(Tc,Tf)
