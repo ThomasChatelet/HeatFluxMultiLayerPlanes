@@ -393,16 +393,17 @@ function Layerdepositer()
 end
 
 function manualtabcreator()
-    println("Define number of layer of side 1 \n")
+    println("Define number of layer of one side \n")
     nblayer1 = readline()
-    nblayer1 = parse(Float64, thickness)
+    nblayer1 = parse(Float64, nblayer1)
     println("You'll be asked to enter one by one the material and the thickness of each layer \n")
     tablayer1 = []
+    push!(tablayer1, Layer(Vacuum,0.0))
     for i in 1:nblayer1
         reslayer = Layerdepositer()
-        push!()
+        push!(tablayer1, reslayer)
     end
-
+    return tablayer1
 end
 
 """
