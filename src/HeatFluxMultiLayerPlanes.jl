@@ -379,6 +379,7 @@ ttM = transmiscoefTM(omega,kpar,permittivity(Current_mat,omega),1.0 + 0im)
 
 abs(rr) - abs(sE[3])
 =#
+
 function Layerdepositer()
     print("Define material \n")
 # Calling rdeadline() function
@@ -397,8 +398,7 @@ function manualtabcreator()
     nblayer1 = readline()
     nblayer1 = parse(Float64, nblayer1)
     println("You'll be asked to enter one by one the material and the thickness of each layer \n")
-    tablayer1 = []
-    push!(tablayer1, Layer(Vacuum,0.0))
+    tablayer1 = [Layer(Vacuum,0.0)]
     for i in 1:nblayer1
         reslayer = Layerdepositer()
         push!(tablayer1, reslayer)
@@ -479,7 +479,7 @@ end
 #multilayertest(20)
 
 function CalcFlux(tablayer,tablayer2,T1,T3,wbot,wtop,message)
-    lengg = 75
+    lengg = 60
     println("Starting " * message)
     datetoday = formatdat()
     abscisse2 = 10 .^range(-9,-5, length = lengg)
@@ -506,7 +506,7 @@ function CalcFlux(tablayer,tablayer2,T1,T3,wbot,wtop,message)
     ioM = open("Calcul HFlux Merch " * Mat1str * " " * Mat3str * " .txt", "w+");
     ioDiff = open("Calcul Flux Diff Homemade-Merch " * Mat1str * " " * Mat3str* " .txt", "w+");
     for i in 1:lengg #Abscisse2 itération sur d
-                #Merchfunc[i] = total_heat_transfer(tablayer, tablayer2, Layer(Vacuum, abscisse2[i]), T1 , T3, 1e10, 1e16 ;tolkx=1e-6,tolw=1e-6)[5]
+                Merchfunc[i] = total_heat_transfer(tablayer, tablayer2, Layer(Vacuum, abscisse2[i]), T1 , T3, 1e10, 1e16 ;tolkx=1e-6,tolw=1e-6)[5]
                 if (i%3 == 0) println(repr(i) * " Precalcul Homemade" * Mat1str * " " * Mat3str) end
                 (PropagTEtab[i], EvaTEtab[i], PropagTMtab[i],EvaTMtab[i], valTE[i], valTM[i], Homemade[i] )= FluxnetechangeMultilayer(abscisse2[i],T1,T3,tablayer,tablayer2)
                 #return (valTE, valTE2, valTM, valTM2, valTE + valTE2, valTM + valTM2, valTE + valTE2 + valTM + valTM2 )
@@ -522,7 +522,7 @@ function CalcFlux(tablayer,tablayer2,T1,T3,wbot,wtop,message)
         (PropagTEtab[i], EvaTEtab[i], PropagTMtab[i],EvaTMtab[i], valTE[i], valTM[i], Homemade[i] ) = (abs(PropagTEtab[i]), abs(EvaTEtab[i]),abs( PropagTMtab[i]),abs(EvaTMtab[i]), abs(valTE[i]), abs(valTM[i]), abs(Homemade[i]) )
     end
     plot(abscisse2,Homemade,xlabel = "Plane separation distance",  label = "Homemade logscale", xaxis=:log, yaxis=:log)
-    #plot!(abscisse2,Merchfunc,xlabel = "Plane separation distance", label = "Merchfunc logscale", xaxis=:log, yaxis=:log)
+    plot!(abscisse2,Merchfunc,xlabel = "Plane separation distance", label = "Merchfunc logscale", xaxis=:log, yaxis=:log)
     savefig("HeatFluxSemilogged" * Mat1str * " " * Mat3str * " " * string(T1) * "K " * string(T3) * "K " * " .png")
     plot(abscisse2,Homemade,xlabel = "Plane separation distance",  label = "Homemade logscale", xaxis=:log, yaxis=:log,ylim=(1e-1, 1e8))
     plot!(abscisse2,PropagTEtab,xlabel = "Plane separation distance", label = "PropagTEtab contribution", xaxis=:log, yaxis=:log,ylim=(1e-1, 1e8))
@@ -532,7 +532,6 @@ function CalcFlux(tablayer,tablayer2,T1,T3,wbot,wtop,message)
     savefig("HeatFluxContributionslogged" * Mat1str * " " * Mat3str * " " * string(T1) * "K " * string(T3) * "K " * " .png")
     #savefig("C:\\Users\\tchatelet\\Documents\\Julia\\Results-plot", "HeatFluxContributionslogged" * Mat1str * " " * Mat3str * " " * string(T1) * "K " * string(T3) * "K " * " .png")
     lengg = 10
-    #=
     Errorcompare = zeros(lengg)
     Errorrelative = zeros(lengg)
     abscisse3 = zeros(lengg)
@@ -540,7 +539,6 @@ function CalcFlux(tablayer,tablayer2,T1,T3,wbot,wtop,message)
     plot(abscisse3,Errorrelative, xlabel = "Plane separation distance",label ="Relative error Hmade _ TotalHeatTransferFlux",Title = "Heat transfer @ 300K 600K")
     savefig("Relative_error " * Mat1str * " " * Mat3str * ".png")
     close(ioDiff)
-    =#
     println("endof " * Mat1str * " " * Mat3str)
 end
 
@@ -568,6 +566,65 @@ function massgenerateplots(Tc,Tf)
 end
 
 massgenerateplots(200,700)
+
+function generateplot(Tc,Tf)
+    tablayer1 = manualtabcreator()
+    tablayer2 = manualtabcreator()
+    while (Tf < Tc)
+        CalcFlux(tablayer1,tablayer2, Tc ,Tf, 1e8, 1e15, "Al bulk  SiC 50nm Al bulk")
+        Tf += 100
+    end
+end
+
+generateplot(700,100)
+
+
+function scribe(file,key)
+	tabstr = readlines(file)
+	nblineinput = size(tabstr)
+	i = 1
+	tablayer1 = [Layer(Vacuum,1.0)]
+	tablayer2 = [Layer(Vacuum,1.0)]
+	currenttab = tablayer1
+	while (tabstr[i] != key)
+		i+=1
+	end
+	i+=1
+	while (tabstr[i] != "Key")
+		println(tabstr[i])
+		rangelayer = parse(Int64,tabstr[i])
+		i+=1
+		nbthickeness = 0
+		while (nbthickeness != rangelayer)
+			typelayer = reverseidentifyStr(tabstr[i])
+			println(tabstr[i])
+			i+=1
+			thickness = parse(Float64,tabstr[i])
+			println(tabstr[i])
+			nbthickeness +=1
+			push!(currenttab, Layer(typelayer,thickness))
+			i+=1
+		end
+		currenttab = tablayer2
+	end
+	return(tablayer1,tablayer2)
+end
+
+function CalcformScribe()
+    tabkey = ["A","B","C"]
+    sizetabkey, = size(tabkey)
+    file= open("C:\\Users\\tchatelet\\Desktop\\Caster.txt")
+    for i in 1:sizetabkey
+        (tablayer1,tablayer2) = scribe(file,tabkey[i])
+        Tf = 100
+        Tc = 700
+        while (Tf < Tc)
+            CalcFlux(tablayer1,tablayer2, Tc ,Tf, 1e8, 1e15, "Param "* tabkey[i] *" ")
+            Tf += 100
+        end
+        file= open("C:\\Users\\tchatelet\\Desktop\\Caster.txt")
+    end
+end
 
 #https://sci-hub.se/10.1364/OE.20.001903
 
