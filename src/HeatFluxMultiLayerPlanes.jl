@@ -610,7 +610,7 @@ function scribe(file,key)
 	return(tablayer1,tablayer2)
 end
 
-function CalcformScribe()
+function CalcfromScribe()
     tabkey = ["A","B","C"]
     sizetabkey, = size(tabkey)
     file= open("C:\\Users\\tchatelet\\Desktop\\Caster.txt")
@@ -625,6 +625,8 @@ function CalcformScribe()
         file= open("C:\\Users\\tchatelet\\Desktop\\Caster.txt")
     end
 end
+
+CalcfromScribe()
 
 #https://sci-hub.se/10.1364/OE.20.001903
 
