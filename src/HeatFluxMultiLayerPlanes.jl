@@ -25,7 +25,7 @@ Corps_noir = Cst(1.00 + im*1e-5)
 function difftab(lengg,Homemade,Merchfunc,Errorcompare,abscisse3,Errorrelative,abscisse2)
     for j in 1:lengg
                 Errorcompare[j] = Homemade[j] - Merchfunc[j]
-                Errorrelative[j] = Errorcompare[j]/Merchfunc[j]
+                Errorrelative[j] = abs(Errorcompare[j]/Merchfunc[j])
                 abscisse3[j] = abscisse2[j]
                 #println(io, round(abscisse2[j],digits=6),  round(Homemade[j],digits=6),  round(Merchfunc[j],digits=6));
     end
@@ -174,12 +174,24 @@ function integpropagTEMultilayer(omega,kpar,d,Eps2,tablayer,tablayer2)
     return kpar*((((1 - abs2(r_TE1)) * (1 - abs2(r_TE3))))/(abs2(1 - (r_TE1 * r_TE3 *exp(2im*d*Kz(omega, Eps2, kpar))))))
 end
 
+function integpropagTEMultilayertransfert(omega,kpar,d,Eps2,tablayer,tablayer2)
+    #Eps3 = permittivity(tabLayer[tablaysize-1],omega)
+    (r_TE1,r_TM1,sE,sM) = calculreflexionmulticouches(omega,kpar,tablayer)
+    (r_TE3,r_TM3,sE,sM) = calculreflexionmulticouches(omega,kpar,tablayer2)
+    return ((((1 - abs2(r_TE1)) * (1 - abs2(r_TE3))))/(abs2(1 - (r_TE1 * r_TE3 *exp(2im*d*Kz(omega, Eps2, kpar))))))
+end
+
 function integpropagTMMultilayer(omega,kpar,d,Eps2,tablayer,tablayer2)
     (r_TE1,r_TM1,sE,sM) = calculreflexionmulticouches(omega,kpar,tablayer)
     (r_TE3,r_TM3,sE,sM) = calculreflexionmulticouches(omega,kpar,tablayer2)
     return kpar*(((1 - abs2(r_TM1)) * (1 - abs2(r_TM3)))/(abs2(1 - (r_TM1 * r_TM3 * exp(2im*d*Kz(omega, Eps2, kpar))))))
 end
 
+function integpropagTMMultilayertransfert(omega,kpar,d,Eps2,tablayer,tablayer2)
+    (r_TE1,r_TM1,sE,sM) = calculreflexionmulticouches(omega,kpar,tablayer)
+    (r_TE3,r_TM3,sE,sM) = calculreflexionmulticouches(omega,kpar,tablayer2)
+    return (((1 - abs2(r_TM1)) * (1 - abs2(r_TM3)))/(abs2(1 - (r_TM1 * r_TM3 * exp(2im*d*Kz(omega, Eps2, kpar))))))
+end
 
 
 function integevaTEMultilayer(omega,kpar,d,Eps2,tablayer,tablayer2)
@@ -189,11 +201,25 @@ function integevaTEMultilayer(omega,kpar,d,Eps2,tablayer,tablayer2)
     return 4*kpar*exp(-2*d*imag(k2perp))*((imag(r_TE1)) * (imag(r_TE3)))/(abs2(1-(r_TE1 * r_TE3 * exp(-2*d*imag(k2perp)))))
 end
 
+function integevaTEMultilayertransfert(omega,kpar,d,Eps2,tablayer,tablayer2)
+    (r_TE1,r_TM1,sE,sM) = calculreflexionmulticouches(omega,kpar,tablayer)
+    (r_TE3,r_TM3,sE,sM) = calculreflexionmulticouches(omega,kpar,tablayer2)
+    k2perp = Kz(omega, Eps2, kpar)
+    return ((imag(r_TE1)) * (imag(r_TE3)))/(abs2(1-(r_TE1 * r_TE3 * exp(-2*d*imag(k2perp)))))
+end
+
 function integevaTMMultilayer(omega,kpar,d,Eps2,tablayer,tablayer2)
     (r_TE1,r_TM1,sE,sM) = calculreflexionmulticouches(omega,kpar,tablayer)
     (r_TE3,r_TM3,sE,sM) = calculreflexionmulticouches(omega,kpar,tablayer2)
     k2perp = Kz(omega, Eps2, kpar)
     return (4*kpar*exp(-2*d*imag(k2perp)))*(((imag(r_TM1)) * (imag(r_TM3)))/(abs2(1-(r_TM1 * r_TM3 * exp(-2*d*imag(k2perp))))))
+end
+
+function integevaTMMultilayertransfert(omega,kpar,d,Eps2,tablayer,tablayer2)
+    (r_TE1,r_TM1,sE,sM) = calculreflexionmulticouches(omega,kpar,tablayer)
+    (r_TE3,r_TM3,sE,sM) = calculreflexionmulticouches(omega,kpar,tablayer2)
+    k2perp = Kz(omega, Eps2, kpar)
+    return (((imag(r_TM1)) * (imag(r_TM3)))/(abs2(1-(r_TM1 * r_TM3 * exp(-2*d*imag(k2perp))))))
 end
 
 
@@ -241,8 +267,6 @@ function generates0()
     return s0
 end
 
-s0 = generates0()
-
 function evolves0TE(S_TE,Mat1,Mat2,omega,kparallele,epaisseur)
     #dl = epaisseur de Mat1
     S11 = S_TE[1]
@@ -279,9 +303,6 @@ function evolves0TM(S_TM,Mat1,Mat2,omega,kparallele,epaisseur)
     S_TM[4] = (1.0/t_TM)*(S22*(r_TM*S_TM[2]+1.0+0im)*exp1kz)
 end
 
-
-s0 = generates0()
-tabLayer = generatelayertab(1)
 
 #=
 omega = 1e14
@@ -382,7 +403,6 @@ abs(rr) - abs(sE[3])
 
 function Layerdepositer()
     print("Define material \n")
-# Calling rdeadline() function
     Strmat = readline()
     Mat = reverseidentifyStr(Strmat)
     print("Define thickness \n")
@@ -464,9 +484,192 @@ function FluxnetechangeMultilayer(d,T1,T3,tablayer,tablayer2; w1 = 1e10, w2 = 1e
     return (valTE, valTE2, valTM, valTM2, valTE + valTE2, valTM + valTM2, valTE + valTE2 + valTM + valTM2 )
 end
 
+function studyplotPTE(w,d) #obselete
+    leng = 20000
+    #wtab = collect(range(1e10,2.0e15, length = leng))
+    tracePTE = zeros(leng)
+    tracePTM = zeros(leng)
+    traceETE = zeros(leng)
+    traceETM = zeros(leng)
+    omegatab = zeros(leng)
+    kpar =  10 .^range(-7,-4, length = leng)
+    for i in 1:leng kpar[i] = 1/kpar[i] end
+    reverse(kpar)
+    #Eps1 = permittivity(Layer(Mat1),w)
+    #Eps3 = permittivity(Layer(Mat3),w)
+    #tablay1 = [Layer(Vacuum,1.0),Layer(Sic())]
+    tablay1 = [Layer(Vacuum,1.0),Layer(Sic())]
+    tablaysic = [Layer(Sic())]
+    tablayv = [Layer(Vacuum)]
+    tablay2 = [Layer(Vacuum,1.0),Layer(Sic(),1.0e-8),Layer(Sic())]
+    for i in 1:leng
+        #integpropagTEMultilayer(omega,kpar,d,Eps2,tablayer,tablayer2)
+        tracePTE[i] = integpropagTEMultilayertransfert(w,kpar[i],d,1.0 + 0.0im,tablay1,tablayv)
+        tracePTM[i] = integpropagTMMultilayertransfert(w,kpar[i],d,1.0 + 0.0im,tablay1,tablayv)
+        traceETE[i] = integevaTEMultilayertransfert(w,kpar[i],d,1.0 + 0.0im,tablay1,tablayv)
+        tracePTE[i] = integevaTMMultilayertransfert(w,kpar[i],d,1.0 + 0.0im,tablay1,tablayv)
+        #omegatab[i] = abs(sqrt(kpar[i]*kpar[i] + Kz(w, permittivity(Sic(),w), kpar[i])*Kz(w, permittivity(Sic(),w), kpar[i] ) + 0im)/c0)
+    end
+    #plot()
+    plot!(kpar,tracePTE + tracePTM, label = "P w = " * repr(w),xaxis=:log,alpha = 0.90)
+    #plot!(kpar,tracePTM, label = "PTM",xaxis=:log)
+    plot!(kpar,traceETE + traceETM, label = "E w = " * repr(w),xaxis=:log,alpha = 0.5)
+    #plot!(kpar,omegatab, label = "omega/c" ,xaxis=:log,alpha = 0.5)
+    #plot!(kpar,traceETM, label = "ETM",xaxis=:log)
+    #return tracePTE
+end
 
 
-#FluxnetechangeMultilayer(1e-3,1,0,tablayer)
+plot(legend = :topleft)
+#studyplotPTE(1.0e12,1.0e-9)
+#studyplotPTE(1.0e13,1.0e-9)
+studyplotPTE(1.786e14,1.0e-9)
+studyplotPTE(1.0e15,1.0e-9)
+studyplotPTE(1.0e16,1.0e-9)
+studyplotPTE(5.0e16,1.0e-9)
+studyplotPTE(1.0e20,1.0e-9)
+
+
+tablay1 = [Layer(Vacuum,1.0),Layer(Sic())]
+tablayv = [Layer(Vacuum)]
+integevaTEMultilayertransfert(1.786e14,1.0e6,1.0e-9,1.0 + 0.0im,tablay1,tablayv)
+integevaTMMultilayertransfert(1.786e14,1.0e6,1.0e-9,1.0 + 0.0im,tablay1,tablayv)
+
+function studyplotPTEHeatmap(d)
+    leng = 1000
+    #wtab = collect(range(1e10,2.0e15, length = leng))
+    tracePTE = zeros(leng)
+    tracePTM = zeros(leng)
+    traceETE = zeros(leng)
+    traceETM = zeros(leng)
+    omegatab = zeros(leng)
+    matrux = zeros(leng,leng)
+    #kpar =  10 .^range(-6.5,-4.0, length = leng)
+    #wtab =  10 .^range(-20.0,-15.0, length = leng)
+    wtab = 10 .^range(10.0,20.0, length = leng)
+    kpartab = wtab ./c0
+
+    #for i in 1:leng kpar[i] = 1.0/kpar[i] end
+    #for i in 1:leng wtab[i] = 1.0/wtab[i] end
+    #reverse(kpar)
+    #reverse(wtab)
+    #Eps1 = permittivity(Layer(Mat1),w)
+    #Eps3 = permittivity(Layer(Mat3),w)
+    #tablay1 = [Layer(Vacuum,1.0),Layer(Sic())]
+    tablay1 = [Layer(Vacuum,d),Layer(Al())]
+    tablaysic = [Layer(Sic())]
+    tablayv = [Layer(Al())]
+    tablay2 = [Layer(Vacuum,d),Layer(Sic(),1.0e-6),Layer(Sic())]
+    for i in eachindex(wtab)
+        for j in eachindex(wtab)
+            if (kpartab[j]>(wtab[i]/c0)) break end
+            #integpropagTEMultilayer(omega,kpar,d,Eps2,tablayer,tablayer2)
+            matrux[i,j] = integpropagTEMultilayertransfert(wtab[i],kpartab[j],d,1.0 + 0.0im,tablay1,tablayv)
+            matrux[i,j] += integpropagTMMultilayertransfert(wtab[i],kpartab[j],d,1.0 + 0.0im,tablay1,tablayv)
+            matrux[i,j] = log10(matrux[i,j])
+            #tracePTE[i] = integpropagTEMultilayertransfert(wtab[i],kpar[i],d,1.0 + 0.0im,tablay1,tablayv)
+            #tracePTM[i] = integpropagTMMultilayertransfert(wtab[i],kpar[i],d,1.0 + 0.0im,tablay1,tablayv)
+            #traceETE[i] = integevaTEMultilayertransfert(wtab[i],kpar[i],d,1.0 + 0.0im,tablay1,tablayv)
+            #tracePTE[i] = integevaTMMultilayertransfert(wtab[i],kpar[i],d,1.0 + 0.0im,tablay1,tablayv)
+            #omegatab[i] = abs(sqrt(kpar[i]*kpar[i] + Kz(w, permittivity(Sic(),w), kpar[i])*Kz(w, permittivity(Sic(),w), kpar[i] ) + 0im)/c0)
+            #"VERFIFIER W[I] > W/C0"
+            #matrux[omeg,i] = tracePTE[i] + tracePTM[i]
+        end
+    end
+    #plot()
+    #plot!(kpar,tracePTE + tracePTM, label = "P w = " * repr(w),xaxis=:log,alpha = 0.90)
+    #plot!(kpar,tracePTM, label = "PTM",xaxis=:log)
+    #plot!(kpar,traceETE + traceETM, label = "E w = " * repr(w),xaxis=:log,alpha = 0.5)
+    #plot!(kpar,omegatab, label = "omega/c" ,xaxis=:log,alpha = 0.5)
+    #plot!(kpar,traceETM, label = "ETM",xaxis=:log)
+    #return tracePTE
+    return (kpartab,wtab,matrux)
+end
+
+(kapartab,wtab,matruxka) = studyplotPTEHeatmap(1.0e-6)
+heatmap(kapartab, wtab, matruxka, xscale = :log10, yscale = :log10)
+
+function testmat()
+    len = 500
+    mat = zeros(len,len)
+    for i in 1:len
+        for j in 1:len
+            mat[i,j] = exp(-1.0e-3*((float(i)-250.0)*(float(i)-250.0) + (float(j)-250.0)*(float(j)-250.0)))
+            if (j>260) break end
+        end
+    end
+    return mat
+end
+
+axeX = collect(1:1:100)
+mat = testmat()
+plot(heatmap(mat))
+
+function spectraltestw(omega,d,T1,T3,tablay1,tablay2) #Pour un omega donne, retourne le flux intégré sur kparallele
+    PTE = FpropagTE(omega,d,T1,T3,tablay1,tablay2)
+    PTM = FpropagTM(omega,d,T1,T3,tablay1,tablay2)
+    ETE = FevaTE(omega,d,T1,T3,tablay1,tablay2)
+    ETM = FevaTM(omega,d,T1,T3,tablay1,tablay2)
+    return (PTE, PTM, ETE, ETM, PTE + PTM + ETE + ETM)
+end
+
+function spectralplottestw(d,T1,T3,tablay1,tablay2,message)
+    leng = 300
+    tabPTE = zeros(leng)
+    tabPTM = zeros(leng)
+    tabETE = zeros(leng)
+    tabETM = zeros(leng)
+    tabtot = zeros(leng)
+    tabtottheo = zeros(leng)
+    tabcheck = zeros(leng)
+    wtab = collect(range(1e10,3.0e15, length = leng))
+    for i in 1:leng
+        (tabPTE[i],tabPTM[i],tabETE[i],tabETM[i],tabtot[i]) = spectraltestw(wtab[i],d,T1,T3,tablay1,tablay2)
+        tabtottheo[i] = total_heat_transfer_w(tablay1, tablay2, Layer(Vacuum,d), T1,T3,wtab[i];tolkx=1e-6,tolw=1e-6)
+        tabcheck[i] = abs(tabtot[i] - tabtottheo[i])/tabtottheo[i]
+    end
+    tabP = zeros(leng)
+    tabE = zeros(leng)
+    for i in 1:leng
+        totP = tabPTM[i] + tabPTE[i]
+        totE = tabETM[i] + tabETE[i]
+        tabP[i] = abs(totP)
+        tabE[i] = abs(totE)
+    end
+    Errorcompare = zeros(leng)
+    Errorrelative = zeros(leng)
+    abscisse3 = zeros(leng)
+    difftab(leng,tabtot,tabtottheo,Errorcompare,abscisse3,Errorrelative,wtab)
+    plot(abscisse3,Errorrelative, xlabel = "Plane separation distance",label ="Relative error Hmade _ TotalHeatTransferFlux",Title = "Heat transfer @ 300K 600K")
+    savefig("Relative_error " * message *  "d = " * string(d) *  " .png")
+    plot(wtab,tabtot,xlabel = "ω", ylabel = "Spectral Heat Flux(ω)",  label = "SpectralHeatFlux(w) d = "* string(d), xaxis=:log, yaxis=:log, ylim =(1e-20,1e-2), title = "Spectral heat Flux @ "* string(T1) *"K "*  string(T3)  *" K " * message,legend=:bottomleft )
+    plot!(wtab,tabP,xlabel = "ω",  label = "SpectralHeatFluxPropag(w) ", xaxis=:log, yaxis=:log, xlim =(1e10,1e17))
+    plot!(wtab,tabE,xlabel = "ω",  label = "SpectralHeatFluxEvancescent(w)", xaxis=:log, yaxis=:log, xlim =(1e10,1e17))
+    plot!(wtab,tabtottheo,xlabel = "omega",ylabel = "HeatFlux(omega)",  label = "TotalTheo", xaxis=:log, yaxis=:log)
+    savefig("SpectralHeatFluxContributionslogged" * string(d) * " " * message * " .png")
+    #plot!(wtab,tabPTE,xlabel = "omega",ylabel = "HeatFlux(omega)",  label = "PropagativeTE", xaxis=:log, yaxis=:log)
+    #plot!(wtab,tabPTE,xlabel = "omega",ylabel = "HeatFlux(omega)",  label = "PropagativeTE", xaxis=:log, yaxis=:log)
+    #plot!(wtab,tabPTE,xlabel = "omega",ylabel = "HeatFlux(omega)",  label = "PropagativeTE", xaxis=:log, yaxis=:log)
+    #plot!(wtab,tabPTM,xlabel = "omega",ylabel = "HeatFlux(omega)",  label = "PropagativeTM", xaxis=:log, yaxis=:log)
+    #plot!(wtab,tabETE,xlabel = "omega",ylabel = "HeatFlux(omega)",  label = "EvanescentTE", xaxis=:log, yaxis=:log)
+    #plot!(wtab,tabETM,xlabel = "omega",ylabel = "HeatFlux(omega)",  label = "EvanescentTM", xaxis=:log, yaxis=:log)
+    #plot!(wtab, (wtab/c0),label = "light cone") #
+    #return tabcheck
+end
+
+function massplotspectralw(T1,T3)
+    Laytab1 = manualtabcreator()
+    Laytab2 = manualtabcreator()
+    StrMat1 = "Al"
+    StrMat3 = "Sic"
+    spectralplottestw(1e-10,T1,T3,Laytab1,Laytab2, "Bulk " * StrMat1 * " " * StrMat3)
+    spectralplottestw(5e-10,T1,T3,Laytab1,Laytab2, "Bulk " * StrMat1 * " " * StrMat3)
+    spectralplottestw(1e-9,T1,T3,Laytab1,Laytab2, "Bulk " * StrMat1 * " " * StrMat3)
+    spectralplottestw(1e-8,T1,T3,Laytab1,Laytab2, "Bulk " * StrMat1 * " " * StrMat3)
+    spectralplottestw(1e-7,T1,T3,Laytab1,Laytab2, "Bulk " * StrMat1 * " " * StrMat3)
+end
+
+massplotspectralw(500,300)
 
 function multilayertest(nbcouches)
     tablayer = generatelayertab(nbcouches)
@@ -571,14 +774,14 @@ function generateplot(Tc,Tf)
     tablayer1 = manualtabcreator()
     tablayer2 = manualtabcreator()
     while (Tf < Tc)
-        CalcFlux(tablayer1,tablayer2, Tc ,Tf, 1e8, 1e15, "Al bulk  SiC 50nm Al bulk")
+        CalcFlux(tablayer1,tablayer2, Tc ,Tf, 1e8, 1e15, "Al bulk  SiC 1000nm Al bulk")
         Tf += 100
     end
 end
 
 generateplot(700,100)
 
-
+file= open("C:\\Users\\tchatelet\\Desktop\\Caster.txt")
 function scribe(file,key)
 	tabstr = readlines(file)
 	nblineinput = size(tabstr)
@@ -619,6 +822,7 @@ function CalcfromScribe()
         Tf = 100
         Tc = 700
         while (Tf < Tc)
+            println("current temp = "* repr(Tf))
             CalcFlux(tablayer1,tablayer2, Tc ,Tf, 1e8, 1e15, "Param "* tabkey[i] *" ")
             Tf += 100
         end
@@ -700,3 +904,8 @@ typeof(size(tabtest))
 a, = size(tabtest)
 
 =#
+
+using Plots
+backend(:plotly)
+p = heatmap([1,2,3,1,2,3,1,2,3],[1,1,1,2,2,2,3,3,3],[1,1,1,1,1,1,1,1,1])
+gui(p)
