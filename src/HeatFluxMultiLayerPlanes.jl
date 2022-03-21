@@ -56,7 +56,7 @@ function transmiscoefTM(omega,kpar,Eps1,Eps2) #Patch4mat
 end
 
 function reflectcoefTM(omega,kpar,Eps1,Eps2)
-    return ( Kz(omega,Eps1,kpar)*Eps2 - Kz(omega,Eps2,kpar)*Eps1      )/( Kz(omega,Eps1,kpar)*Eps2 + Kz(omega,Eps2,kpar)*Eps1 )
+    return ( Kz(omega,Eps1,kpar)*Eps2 - Kz(omega,Eps2,kpar)*Eps1   )/( Kz(omega,Eps1,kpar)*Eps2 + Kz(omega,Eps2,kpar)*Eps1 )
 end
 
 
@@ -365,8 +365,8 @@ function calculreflexionmulticouches(omega,kparallele,tabllayer)
     S_TransverseTE = generates0()
     S_TransverseTM = generates0()
     nbcouches, = size(tabllayer)
-    rTE_end = 0
-    rTM_end = 0
+    rTE_end = 0.0
+    rTM_end = 0.0
     #=
     if (nbcouches != size(tabLayer))
         println("Nombre d'épaisseurs != Nombre de layers")
@@ -566,7 +566,7 @@ function studyplotPTEHeatmap(d)
             #integpropagTEMultilayer(omega,kpar,d,Eps2,tablayer,tablayer2)
             matrux[i,j] = integpropagTEMultilayertransfert(wtab[i],kpartab[j],d,1.0 + 0.0im,tablay1,tablayv)
             matrux[i,j] += integpropagTMMultilayertransfert(wtab[i],kpartab[j],d,1.0 + 0.0im,tablay1,tablayv)
-            matrux[i,j] = log10(matrux[i,j])
+            #matrux[i,j] = log10(matrux[i,j])
             #tracePTE[i] = integpropagTEMultilayertransfert(wtab[i],kpar[i],d,1.0 + 0.0im,tablay1,tablayv)
             #tracePTM[i] = integpropagTMMultilayertransfert(wtab[i],kpar[i],d,1.0 + 0.0im,tablay1,tablayv)
             #traceETE[i] = integevaTEMultilayertransfert(wtab[i],kpar[i],d,1.0 + 0.0im,tablay1,tablayv)
@@ -584,10 +584,13 @@ function studyplotPTEHeatmap(d)
     #plot!(kpar,traceETM, label = "ETM",xaxis=:log)
     #return tracePTE
     return (kpartab,wtab,matrux)
+    #return matrux
 end
 
 (kapartab,wtab,matruxka) = studyplotPTEHeatmap(1.0e-6)
 heatmap(kapartab, wtab, matruxka, xscale = :log10, yscale = :log10)
+matrux = studyplotPTEHeatmap(1.0e-7)
+heatmap(matrux)
 
 function testmat()
     len = 500
